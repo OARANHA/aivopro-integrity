@@ -1,0 +1,9 @@
+{
+    "name": "28facil/api-server",
+    "description": "API Server for 28Fácil with JWT and API Key authentication",
+    "type": "project",
+    "require": {
+        "php": "^8.2",
+        "firebase/php-jwt": "^6.10"
+    }
+}
