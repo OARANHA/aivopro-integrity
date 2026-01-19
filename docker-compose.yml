@@ -1,106 +1,98 @@
+# =====================================================
+# 28FÁCIL API - Stack para Portainer
+# Deploy direto do GitHub via Portainer
+# =====================================================
+
 version: '3.8'
 
 services:
   # =====================================================
-  # API Server - Laravel/PHP para gerenciar API Keys
-  # =====================================================
-  api-server:
-    build:
-      context: ./docker/api-server
-      dockerfile: Dockerfile
-    container_name: 28facil-api-server
-    restart: unless-stopped
-    environment:
-      # Banco de Dados
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_DATABASE: ${DB_DATABASE:-28facil_api}
-      DB_USERNAME: ${DB_USERNAME:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-senha_forte_aqui}
-      
-      # App
-      APP_NAME: "28Fácil API"
-      APP_ENV: ${APP_ENV:-production}
-      APP_KEY: ${APP_KEY:-base64:GERAR_COM_php_artisan_key_generate}
-      APP_DEBUG: ${APP_DEBUG:-false}
-      APP_URL: https://api.28facil.com.br
-      
-      # JWT/Auth
-      JWT_SECRET: ${JWT_SECRET:-seu_jwt_secret_aqui}
-    volumes:
-      - ./api-server:/var/www/html
-      - ./storage/api-logs:/var/www/html/storage/logs
-    networks:
-      - traefik-network
-      - internal
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api-server.rule=Host(`api.28facil.com.br`)"
-      - "traefik.http.routers.api-server.entrypoints=websecure"
-      - "traefik.http.routers.api-server.tls=true"
-      - "traefik.http.routers.api-server.tls.certresolver=letsencrypt"
-      - "traefik.http.services.api-server.loadbalancer.server.port=80"
-      # CORS Headers
-      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowmethods=GET,POST,PUT,PATCH,DELETE,OPTIONS"
-      - "traefik.http.middlewares.api-cors.headers.accesscontrolalloworiginlist=https://28facil.com.br,https://www.28facil.com.br"
-      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowheaders=Content-Type,Authorization,X-API-Key"
-      - "traefik.http.routers.api-server.middlewares=api-cors@docker"
-    depends_on:
-      - mysql
-
-  # =====================================================
-  # MySQL Database
+  # MYSQL - Banco de Dados
   # =====================================================
   mysql:
     image: mysql:8.0
     container_name: 28facil-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-senha_forte_aqui}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-senha_forte_123}
       MYSQL_DATABASE: ${DB_DATABASE:-28facil_api}
       MYSQL_USER: ${DB_USERNAME:-28facil}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-senha_forte_aqui}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-senha_forte_123}
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./server-examples/database-migration.sql:/docker-entrypoint-initdb.d/01-migration.sql:ro
+    ports:
+      - "3306:3306"
     networks:
-      - internal
-    command: --default-authentication-plugin=mysql_native_password
+      - 28facil-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # =====================================================
-  # Traefik Reverse Proxy (se você ainda não tiver)
+  # API SERVER - 28Fácil
   # =====================================================
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
+  api-server:
+    image: php:8.2-apache
+    container_name: 28facil-api
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
     environment:
-      - TZ=America/Sao_Paulo
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/traefik.yml:/traefik.yml:ro
-      - ./traefik/acme.json:/acme.json
-      - ./traefik/logs:/logs
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-28facil_api}
+      DB_USERNAME: ${DB_USERNAME:-28facil}
+      DB_PASSWORD: ${DB_PASSWORD:-senha_forte_123}
+      JWT_SECRET: ${JWT_SECRET:-mude_isso_em_producao_para_chave_segura}
+    ports:
+      - "8080:80"
     networks:
-      - traefik-network
-    labels:
-      - "traefik.enable=true"
-      # Dashboard (OPCIONAL - descomente se quiser)
-      # - "traefik.http.routers.traefik.rule=Host(`traefik.28facil.com.br`)"
-      # - "traefik.http.routers.traefik.entrypoints=websecure"
-      # - "traefik.http.routers.traefik.tls=true"
-      # - "traefik.http.routers.traefik.service=api@internal"
+      - 28facil-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: |
+      bash -c "
+        # Instalar extensões PHP necessárias
+        docker-php-ext-install pdo pdo_mysql mysqli
+        
+        # Ativar mod_rewrite do Apache
+        a2enmod rewrite
+        
+        # Criar diretório public se não existir
+        mkdir -p /var/www/html/public
+        
+        # Criar index.php básico para teste
+        if [ ! -f /var/www/html/public/index.php ]; then
+          cat > /var/www/html/public/index.php << 'EOF'
+<?php
+header('Content-Type: application/json');
+
+echo json_encode([
+    'status' => 'success',
+    'message' => '28Fácil API Server is running!',
+    'timestamp' => date('Y-m-d H:i:s'),
+    'version' => '1.0.0',
+    'php_version' => phpversion(),
+    'database' => [
+        'host' => getenv('DB_HOST'),
+        'database' => getenv('DB_DATABASE'),
+        'status' => 'configured'
+    ]
+], JSON_PRETTY_PRINT);
+EOF
+        fi
+        
+        # Configurar Apache DocumentRoot
+        sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+        
+        # Restart Apache
+        apache2-foreground
+      "
 
 networks:
-  traefik-network:
-    name: traefik-network
-    driver: bridge
-  internal:
+  28facil-network:
     driver: bridge
 
 volumes:
   mysql-data:
-    driver: local
