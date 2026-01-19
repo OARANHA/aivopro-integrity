@@ -1,0 +1,49 @@
+# =====================================================
+# TRAEFIK CONFIGURATION - 28Fácil
+# =====================================================
+
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+api:
+  dashboard: true
+  insecure: false
+
+log:
+  level: INFO
+  filePath: /logs/traefik.log
+
+accessLog:
+  filePath: /logs/access.log
+  bufferingSize: 100
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: traefik-network
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: seu-email@exemplo.com  # TROCAR!
+      storage: /acme.json
+      httpChallenge:
+        entryPoint: web
