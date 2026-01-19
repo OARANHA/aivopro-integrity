@@ -1,13 +1,14 @@
 # =====================================================
-# TRAEFIK - Reverse Proxy + SSL Automático
+# TRAEFIK 3.6 - Reverse Proxy + SSL Automático
 # Deploy PRIMEIRO esta stack via Portainer
+# Suporte até: Novembro 2026
 # =====================================================
 
 version: '3.8'
 
 services:
   traefik:
-    image: traefik:v2.11
+    image: traefik:v3.6
     container_name: traefik
     restart: unless-stopped
     command:
@@ -24,9 +25,10 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       
-      # HTTP para HTTPS redirect
+      # HTTP para HTTPS redirect global
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       
       # Let's Encrypt
       - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@28facil.com.br}"
@@ -36,6 +38,9 @@ services:
       # Logs
       - "--log.level=INFO"
       - "--accesslog=true"
+      
+      # Desabilitar telemetria
+      - "--global.sendAnonymousUsage=false"
     
     ports:
       - "80:80"
