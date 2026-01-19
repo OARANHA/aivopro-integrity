@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<ruleset name="28Facil Integrity Coding Standard">
+    <description>Coding standard for 28Facil Integrity package</description>
+
+    <!-- Arquivos a verificar -->
+    <file>src</file>
+    <file>tests</file>
+
+    <!-- Padrão PSR-12 -->
+    <rule ref="PSR12"/>
+
+    <!-- Configurações -->
+    <arg name="colors"/>
+    <arg value="sp"/>
+    <arg name="parallel" value="8"/>
+
+    <!-- Cache -->
+    <arg name="cache" value=".phpcs.cache"/>
+
+    <!-- Ignorar vendor -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/var/*</exclude-pattern>
+    <exclude-pattern>*/coverage/*</exclude-pattern>
+</ruleset>
