@@ -1,0 +1,50 @@
+# =====================================================
+# STACK SIMPLES - 28FÁCIL API (Sem Traefik)
+# =====================================================
+# Use esta stack se você NÃO quer usar Traefik/SSL
+# Acesso direto via http://seu-ip:8080
+# =====================================================
+
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: 28facil-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: senha123
+      MYSQL_DATABASE: 28facil_api
+      MYSQL_USER: 28facil
+      MYSQL_PASSWORD: senha123
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Server
+  api-server:
+    image: php:8.2-apache
+    container_name: 28facil-api
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: 28facil_api
+      DB_USERNAME: 28facil
+      DB_PASSWORD: senha123
+      JWT_SECRET: mude_isso_para_algo_super_secreto
+    ports:
+      - "8080:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
