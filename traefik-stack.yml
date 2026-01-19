@@ -13,6 +13,7 @@ services:
     command:
       # Dashboard
       - "--api.dashboard=true"
+      - "--api.insecure=true"
       
       # Docker provider
       - "--providers.docker=true"
@@ -39,6 +40,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "8088:8080"  # Dashboard para teste (SEM DNS)
     
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -52,7 +54,7 @@ services:
       # Habilitar Traefik para si mesmo
       - "traefik.enable=true"
       
-      # Dashboard do Traefik (opcional)
+      # Dashboard do Traefik via domínio (COM DNS)
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.28facil.com.br`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
