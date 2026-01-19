@@ -30,7 +30,7 @@ services:
       
       # Let's Encrypt
       - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@28facil.com.br}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
       
       # Logs
@@ -44,7 +44,7 @@ services:
     
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik-acme:/acme.json
+      - traefik-letsencrypt:/letsencrypt
       - traefik-logs:/var/log/traefik
     
     networks:
@@ -71,5 +71,5 @@ networks:
     name: traefik-public
 
 volumes:
-  traefik-acme:
+  traefik-letsencrypt:
   traefik-logs:
