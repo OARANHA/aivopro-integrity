@@ -1,0 +1,73 @@
+# =====================================================
+# TRAEFIK - Reverse Proxy + SSL Automático
+# Deploy PRIMEIRO esta stack via Portainer
+# =====================================================
+
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      # Dashboard
+      - "--api.dashboard=true"
+      
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=traefik-public"
+      
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      
+      # HTTP para HTTPS redirect
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      
+      # Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@28facil.com.br}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      
+      # Logs
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-acme:/acme.json
+      - traefik-logs:/var/log/traefik
+    
+    networks:
+      - traefik-public
+    
+    labels:
+      # Habilitar Traefik para si mesmo
+      - "traefik.enable=true"
+      
+      # Dashboard do Traefik (opcional)
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.28facil.com.br`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.middlewares=auth"
+      
+      # Autenticação básica (user: admin, pass: admin - MUDE ISSO!)
+      # Gere nova senha: echo $(htpasswd -nb admin sua_senha) | sed -e s/\$/\$\$/g
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$8jKVHq5T$$mF8LRr5NqzVGvL5x9xH5N/"
+
+networks:
+  traefik-public:
+    driver: bridge
+    name: traefik-public
+
+volumes:
+  traefik-acme:
+  traefik-logs:
