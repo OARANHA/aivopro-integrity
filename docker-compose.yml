@@ -1,5 +1,5 @@
 # =====================================================
-# 28FÁCIL API - Stack para Portainer
+# 28FACIL API - Stack para Portainer
 # Deploy direto do GitHub via Portainer
 # =====================================================
 
@@ -31,7 +31,7 @@ services:
       retries: 5
 
   # =====================================================
-  # API SERVER - 28Fácil
+  # API SERVER - 28Facil
   # =====================================================
   api-server:
     image: php:8.2-apache
@@ -51,44 +51,16 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-    command: |
-      bash -c "
-        # Instalar extensões PHP necessárias
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
         docker-php-ext-install pdo pdo_mysql mysqli
-        
-        # Ativar mod_rewrite do Apache
         a2enmod rewrite
-        
-        # Criar diretório public se não existir
         mkdir -p /var/www/html/public
-        
-        # Criar index.php básico para teste
-        if [ ! -f /var/www/html/public/index.php ]; then
-          cat > /var/www/html/public/index.php << 'EOF'
-<?php
-header('Content-Type: application/json');
-
-echo json_encode([
-    'status' => 'success',
-    'message' => '28Fácil API Server is running!',
-    'timestamp' => date('Y-m-d H:i:s'),
-    'version' => '1.0.0',
-    'php_version' => phpversion(),
-    'database' => [
-        'host' => getenv('DB_HOST'),
-        'database' => getenv('DB_DATABASE'),
-        'status' => 'configured'
-    ]
-], JSON_PRETTY_PRINT);
-EOF
-        fi
-        
-        # Configurar Apache DocumentRoot
+        echo '<?php header("Content-Type: application/json"); echo json_encode(["status" => "success", "message" => "28Facil API Server is running!", "timestamp" => date("Y-m-d H:i:s"), "version" => "1.0.0", "php_version" => phpversion(), "database" => ["host" => getenv("DB_HOST"), "database" => getenv("DB_DATABASE"), "status" => "configured"]], JSON_PRETTY_PRINT);' > /var/www/html/public/index.php
         sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
-        
-        # Restart Apache
         apache2-foreground
-      "
 
 networks:
   28facil-network:
