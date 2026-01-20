@@ -1,6 +1,6 @@
 {
     "name": "aivopro/integrity",
-    "description": "28Fácil System Integrity Manager - Verificação de saúde e configuração da API com suporte a JWT",
+    "description": "AiVoPro System Integrity Manager - Verificação de saúde e configuração da API com suporte a JWT",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -14,9 +14,9 @@
     ],
     "authors": [
         {
-            "name": "28Fácil Team",
-            "email": "contato@28facil.com.br",
-            "homepage": "https://28facil.com.br"
+            "name": "AiVoPro Team",
+            "email": "contato@aivopro.com.br",
+            "homepage": "https://aivopro.com.br"
         }
     ],
     "require": {
